@@ -72,7 +72,7 @@ pub use crate::disable_directives::{
 pub use crate::{
     config::{
         Config, ConfigBuilderError, ConfigStore, ConfigStoreBuilder, ESLintRule, LintIgnoreMatcher,
-        LintPlugins, Oxlintrc, ResolvedLinterState,
+        LintPlugins, Oxlintrc, ResolvedLinterState, RuleConfig,
     },
     context::{ContextSubHost, ContextSubHostOptions, LintContext},
     external_linter::{
@@ -410,7 +410,7 @@ impl Linter {
 
                     rule.should_run(&ctx_host)
                 })
-                .map(|(rule, severity)| (rule, Rc::clone(&ctx_host).spawn(rule, *severity)))
+                .map(|(rule, config)| (rule, Rc::clone(&ctx_host).spawn(rule, config.severity)))
                 .collect::<Vec<_>>();
 
             execute_rules::<TIMINGS>(&rules, semantic, true, timing_recorder.as_mut());
