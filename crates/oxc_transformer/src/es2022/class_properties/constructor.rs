@@ -550,6 +550,15 @@ impl<'a> ClassProperties<'a> {
             return;
         }
 
+        // A catch parameter linked to a clashing binding by a same-named `var` prints through
+        // that `var`, so it must take the same new name. Collect these before renaming: the link
+        // is found by name (see `Scoping::catch_var_binding`).
+        let linked_catches = ctx
+            .scoping()
+            .catch_var_bindings()
+            .filter(|(_, outer)| clashing_symbols.contains_key(outer))
+            .collect::<Vec<_>>();
+
         // Rename symbols to UIDs
         let constructor_scope_id = constructor.scope_id();
         for (&symbol_id, name) in clashing_symbols.iter_mut() {
@@ -559,6 +568,12 @@ impl<'a> ClassProperties<'a> {
             *name = new_name;
             // Rename symbol and binding
             ctx.scoping_mut().rename_symbol(symbol_id, constructor_scope_id, new_name);
+        }
+        for (catch, outer) in linked_catches {
+            let new_name = clashing_symbols[&outer];
+            let scope_id = ctx.scoping().symbol_scope_id(catch);
+            ctx.scoping_mut().rename_symbol(catch, scope_id, new_name);
+            clashing_symbols.insert(catch, new_name);
         }
 
         // Rename identifiers for clashing symbols in constructor params and body
